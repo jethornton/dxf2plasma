@@ -1,0 +1,60 @@
+#!/usr/bin/python3
+
+import os, sys
+import platform
+
+from PyQt5 import uic
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QFileDialog)
+from PyQt5.QtGui import QPainter, QBrush, QPen
+from PyQt5 import QtCore
+import lib.stuff as stuff
+
+#UI_FILE = os.path.join(os.path.dirname(__file__), "pyqt5_simple.ui")
+UI_FILE = os.path.join(os.path.dirname(__file__), "d2p.ui")
+
+VERSION = '0.0.1'
+
+class MainWindow(QMainWindow):
+	def __init__(self):
+		super(MainWindow, self).__init__()
+		uic.loadUi(UI_FILE, self)
+		self.version = '0.0.1'
+		self.setWindowTitle('{} Version {}'.format(stuff.title(), VERSION))
+		#self.versionLbl.setText('Python {}'.format(platform.python_version()))
+		#self.testLbl.setText(stuff.test())
+		#self.readdxf()
+		self.openFile()
+
+		self.show()
+
+	def openFile(self):
+		options = QFileDialog.Options()
+		options |= QFileDialog.DontUseNativeDialog
+		fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
+		if fileName:
+			print(fileName)
+
+
+
+	def readdxf(self):
+		with open('test.dxf') as f:
+			print('start')
+			for i, l in enumerate(f):
+				if l.rstrip() == 'LINE':
+					print(l.rstrip())
+
+	def paintEvent(self, event):
+		painter = QPainter()
+		painter.begin(self)
+		painter.setRenderHint(QPainter.Antialiasing)
+		painter.setPen(QtCore.Qt.black)
+		painter.setBrush(QtCore.Qt.white)
+		painter.drawLine(0, 0, 200, 200)
+
+def main():
+	app = QApplication(sys.argv)
+	ex = MainWindow()
+	sys.exit(app.exec_())
+
+if __name__ == "__main__":
+	main()
