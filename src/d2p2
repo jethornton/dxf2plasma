@@ -1,0 +1,126 @@
+#!/usr/bin/python3
+
+import os, sys
+from PyQt5 import uic, QtCore
+from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PyQt5.QtGui import QPainter, QBrush, QPen, QTransform
+
+UI_FILE = os.path.join(os.path.dirname(__file__), "d2p.ui")
+VERSION = '0.0.1'
+
+
+class MainWindow(QMainWindow):
+	def __init__(self):
+		super(MainWindow, self).__init__()
+		uic.loadUi(UI_FILE, self)
+		self.version = '0.0.1'
+		self.setWindowTitle('DXF to Plasma Version {}'.format(VERSION))
+		self.dxfList = []
+		self.entityList = []
+
+
+		self.show()
+		self.canvasWidth = self.openGLWidget.geometry().width()
+		self.canvasHeight = self.openGLWidget.geometry().height()
+		self.dxfRead()
+
+	# Auto connected menu action callbacks
+	@pyqtSlot()
+	def on_actionOpen_triggered(self):
+		options = QFileDialog.Options()
+		options |= QFileDialog.DontUseNativeDialog
+		fname, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
+		if fname:
+			self.dxfRead(fname)
+
+	def dxfRead(self, fname='test.dxf'): # parse the entities
+		saveList = False
+		self.fileLbl.setText(fname)
+
+		with open(fname) as f:
+			for l in f:
+				if saveList and l.strip() == 'ENDSEC':
+					saveList = False
+				if saveList:
+					self.dxfList.append(l.strip())
+				if l.strip() == 'ENTITIES':
+					saveList = True
+		self.createEntities()
+
+	def createEntities(self):
+		getLine = False
+		getStartX = False
+		getStartY = False
+		getEndX = False
+		getEndY = False
+		getLayer = False
+		saveNext = False
+		entityList = []
+		codeMatch = ''
+		linecount = 0
+		for i in self.dxfList:
+			if getLine:
+				if getLayer: # Get the Layer Name
+					if saveNext:
+						entityList.append(i.strip())
+						saveNext = False
+					if  i.strip() == '8':
+						saveNext = True
+				if i.strip() == 'AcDbEntity':
+					getLayer = True
+
+				if getStartX:
+					entityList.append(float(i.strip()))
+					getStartX = False
+				if getStartY:
+					entityList.append(float(i.strip()))
+					getStartY = False
+				if getEndX:
+					entityList.append(float(i.strip()))
+					getEndX = False
+				if getEndY:
+					entityList.append(float(i.strip()))
+					getEndY = False
+					getLine = False
+					self.entityList.append(entityList)
+					entityList = []
+
+				if i.strip() == '10':
+					getStartX = True
+				if i.strip() == '11':
+					getStartY = True
+				if i.strip() == '20':
+					getEndX = True
+				if i.strip() == '21':
+					getEndY = True
+
+			if i.strip() == 'LINE':
+				entityList.append('LINE')
+				getLine = True
+				linecount += 1
+
+	def paintEvent(self, event):
+		painter = QPainter(self.openGLWidget)
+		painter.setRenderHint(QPainter.Antialiasing)
+		painter.setPen(QtCore.Qt.white)
+		painter.setBrush(QtCore.Qt.black)
+		t = QTransform()
+		t.translate(self.canvasWidth / 2, self.canvasHeight / 2)
+		painter.setTransform(t)
+		if len(self.entityList) > 0:
+			for l in self.entityList:
+				if l[0] == 'LINE':
+					painter.drawLine(l[2], l[3], l[4], l[5])
+
+
+
+
+def main():
+	app = QApplication(sys.argv)
+	ex = MainWindow()
+	sys.exit(app.exec_())
+
+if __name__ == "__main__":
+	main()
+

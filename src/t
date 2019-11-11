@@ -1,0 +1,35 @@
+#!/usr/bin/python3
+
+d = {'1': ['LINE', '-40', '40', '40', '40']}
+d['2'] = ['LINE', '40', '40', '40', '-40']
+d['3'] = ['LINE', '40', '-40', '-40', '-40']
+d['4'] = ['LINE', '-40', '-40', '-40', '40']
+
+for i in d:
+	c = '{}, {}, {}, {}'.format(d.get(i)[1], d.get(i)[2], d.get(i)[3], d.get(i)[4])
+	#print(c)
+
+
+"""
+parse each layer of entities
+100 Subclass marker (AcDbEntity)
+8 Layer name
+100 Subclass marker (AcDbBlockBegin)
+"""
+saveList = False
+entityList = []
+with open('test.dxf') as f:
+	for l in f:
+
+		if saveList and l.strip() == 'ENDSEC':
+			saveList = False
+
+		if saveList:
+			entityList.append(l.strip())
+
+		if l.strip() == 'ENTITIES':
+			saveList = True
+
+for i in entityList:
+	print(i)
+

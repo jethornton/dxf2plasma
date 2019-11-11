@@ -4,8 +4,9 @@ import os, sys
 import platform
 
 from PyQt5 import uic
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QFileDialog)
-from PyQt5.QtGui import QPainter, QBrush, QPen
+from PyQt5.QtGui import QPainter, QBrush, QPen, QTransform
 from PyQt5 import QtCore
 import lib.stuff as stuff
 
@@ -19,37 +20,276 @@ class MainWindow(QMainWindow):
 		super(MainWindow, self).__init__()
 		uic.loadUi(UI_FILE, self)
 		self.version = '0.0.1'
-		self.setWindowTitle('{} Version {}'.format(stuff.title(), VERSION))
+		self.setWindowTitle('DXF to Plasma Version {}'.format(VERSION))
 		#self.versionLbl.setText('Python {}'.format(platform.python_version()))
 		#self.testLbl.setText(stuff.test())
-		#self.readdxf()
-		self.openFile()
+		self.entities = {}
+		self.dxfList = []
+		self.entityList = []
+
+		#self.readdxf2('test2.dxf')
+		self.on_actionOpen_triggered()
 
 		self.show()
-
-	def openFile(self):
-		options = QFileDialog.Options()
-		options |= QFileDialog.DontUseNativeDialog
-		fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
-		if fileName:
-			print(fileName)
+		self.canvasWidth = self.openGLWidget.geometry().width()
+		self.canvasHeight = self.openGLWidget.geometry().height()
+		self.paintEvent()
 
 
+	# Auto connected menu action callbacks
+	@pyqtSlot()
+	def on_actionOpen_triggered(self, fname = 'test.dxf'):
+		saveList = False
+		#options = QFileDialog.Options()
+		#options |= QFileDialog.DontUseNativeDialog
+		#fname, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
+		if fname:
+			with open(fname) as f:
+				for l in f:
+					if saveList and l.strip() == 'ENDSEC':
+						saveList = False
+					if saveList:
+						self.dxfList.append(l.strip())
+					if l.strip() == 'ENTITIES':
+						saveList = True
+			print(fname)
+			self.fileLbl.setText(fname)
+			self.createEntities()
+
+	def createEntities(self):
+		print('Create Entities')
+		getLine = False
+		getStartX = False
+		getStartY = False
+		getEndX = False
+		getEndY = False
+		getLayer = False
+		saveNext = False
+		entityList = []
+		codeMatch = ''
+		linecount = 0
+		for i in self.dxfList:
+			if getLine:
+				if getLayer: # Get the Layer Name
+					if saveNext:
+						entityList.append(i.strip())
+						saveNext = False
+					if  i.strip() == '8':
+						saveNext = True
+				if i.strip() == 'AcDbEntity':
+					getLayer = True
+
+				if getStartX:
+					entityList.append(float(i.strip()))
+					getStartX = False
+				if getStartY:
+					entityList.append(float(i.strip()))
+					getStartY = False
+				if getEndX:
+					entityList.append(float(i.strip()))
+					getEndX = False
+				if getEndY:
+					entityList.append(float(i.strip()))
+					getEndY = False
+					getLine = False
+					self.entityList.append(entityList)
+					entityList = []
+
+				if i.strip() == '10':
+					getStartX = True
+				if i.strip() == '11':
+					getStartY = True
+				if i.strip() == '20':
+					getEndX = True
+				if i.strip() == '21':
+					getEndY = True
+
+			if i.strip() == 'LINE':
+				entityList.append('LINE')
+				getLine = True
+				linecount += 1
+
+		print(self.entityList)
+
+
+	def readdxf2(self, fname):
+		#print('read dxf 2')
+		count = 0
+		self.entities = {}
+		lineStart = False
+		getCoord = False
+		getStartX = False
+		getStartY = False
+		getEndX = False
+		getEndY = False
+		entitieList = []
+
+		with open(fname) as f:
+			for l in f:
+
+				if getCoord:
+
+					if getStartX:
+						entitieList.append(float(l.rstrip()))
+						#print('Start X ' + l.rstrip())
+						getStartX = False
+					if l.rstrip() == ' 10':
+						getStartX = True
+
+					if getStartY:
+						entitieList.append(float(l.rstrip()))
+						#print('Start Y ' + l.rstrip())
+						getStartY = False
+					if l.rstrip() == ' 11':
+						getStartY = True
+
+					if getEndX:
+						entitieList.append(float(l.rstrip()))
+						#print('End X ' + l.rstrip())
+						getEndX = False
+					if l.rstrip() == ' 20':
+						getEndX = True
+
+					if getEndY:
+						entitieList.append(float(l.rstrip()))
+						#print('End Y ' + l.rstrip())
+						getEndY = False
+						lineStart = False
+						getCoord = False
+						self.entities[str(count)] = entitieList
+						print(entitieList)
+
+					if l.rstrip() == ' 21':
+						getEndY = True
+
+				if lineStart and l.strip() == 'AcDbLine':
+					getCoord = True
+
+				if l.strip() == 'LINE':
+					entitieList = []
+					entitieList.append('LINE')
+					count += 1
+					lineStart = True
+					#print(l.strip())
+
+			#print(self.entities)
+			#for i in self.entities:
+				#print(self.entities.get(i)[0])
 
 	def readdxf(self):
+		# Read the raw file and create a list of entities
+		pass
+
+
+
+		"""
+
+				if not getCoord and i.strip() == 'LINE':
+					entitieList.append('LINE')
+					print(i.strip())
+					count += 1
+					print(str(count))
+					getCoord = True
+
+				if getCoord and i.strip() == '10':
+					getStartX = True
+				if getStartX:
+					entitieList.append(i.strip())
+					getStartX = False
+					print('Start X {}'.format(i.strip())
+
+
+
+				if getCoord and i.strip() == 'LINE':
+					getCoord = False
+					print(i.strip())
+
+		print(entities)
+		"""
+
+	"""
+#	def readdxf(self, file):
+	def readdxf(self,):
+		getCoord = False
+		getStartX = False
+		getStartY = False
+		getEndX = False
+		getEndY = False
+		entitieCount = 0
+		entities = {}
+		entitieList = []
+
 		with open('test.dxf') as f:
-			print('start')
 			for i, l in enumerate(f):
-				if l.rstrip() == 'LINE':
+				if not getCoord and l.rstrip() == 'LINE':
+					entitieList.append('LINE')
+					entitieCount += 1
 					print(l.rstrip())
+				if l.rstrip() == 'AcDbLine':
+					getCoord = True
+					print('here')
+				if getCoord:
+
+					if getStartX:
+						entitieList.append(float(l.rstrip()))
+						print('Start X ' + l.rstrip())
+						getStartX = False
+					if l.rstrip() == ' 10':
+						getStartX = True
+
+					if getStartY:
+						entitieList.append(float(l.rstrip()))
+						print('Start Y ' + l.rstrip())
+						getStartY = False
+					if l.rstrip() == ' 11':
+						getStartY = True
+
+					if getEndX:
+						entitieList.append(float(l.rstrip()))
+						print('End X ' + l.rstrip())
+						getEndX = False
+					if l.rstrip() == ' 20':
+						getEndX = True
+
+					if getEndY:
+						entitieList.append(float(l.rstrip()))
+						print('End Y ' + l.rstrip())
+						getEndY = False
+					if l.rstrip() == ' 21':
+						getEndY = True
+
+					if  l.rstrip() == 'LINE':
+						entities['entitie{0}'.format(entitieCount)] = entitieList
+						#print(entitieList)
+						entitieList = []
+						#print(entitieList)
+						getCoord = False
+		#print(i)
+		#print(entities)
+		#for ent in entities:
+			#print(ent)
+	"""
 
 	def paintEvent(self, event):
-		painter = QPainter()
-		painter.begin(self)
+		painter = QPainter(self.openGLWidget)
 		painter.setRenderHint(QPainter.Antialiasing)
-		painter.setPen(QtCore.Qt.black)
-		painter.setBrush(QtCore.Qt.white)
-		painter.drawLine(0, 0, 200, 200)
+		painter.setPen(QtCore.Qt.white)
+		painter.setBrush(QtCore.Qt.black)
+		t = QTransform()
+		t.translate(self.canvasWidth / 2, self.canvasHeight / 2)
+		painter.setTransform(t)
+		for i in self.entityList:
+			print(i[2])
+
+			#cn = [float(n) for n in d.get(i)[1:]]
+			#print(cn)
+			#print(cn)
+			#painter.drawLine(cn[1], cn[2], cn[3], cn[4])
+		#painter.drawLine(-40, 40, 40, 40)
+		#painter.drawLine(40, 40, 40, -40)
+		#painter.drawLine(40, -40, -40, -40)
+		#painter.drawLine(-40, -40, -40, 40)
+
 
 def main():
 	app = QApplication(sys.argv)
