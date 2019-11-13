@@ -1,0 +1,10 @@
+g++ -c main.cpp
+g++ main.o -o sfml-app -lsfml-graphics -lsfml-window -lsfml-system
+
+./sfml-app
+
+
+for opengl link -lglew
+
+g++ main.o -o sfml-app -lglew -lsfml-graphics -lsfml-window -lsfml-system -lglew
+

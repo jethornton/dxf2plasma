@@ -1,1 +1,5 @@
 check out opencv
+
+ogl5.py depenencies
+sudo apt install python3-opengl
+sudo apt install python3-pyqt5.qtopengl

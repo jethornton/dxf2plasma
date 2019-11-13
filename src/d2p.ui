@@ -43,6 +43,29 @@
         <string>PushButton</string>
        </property>
       </widget>
+      <widget class="QWidget" name="widget_3" native="true">
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>9</y>
+         <width>441</width>
+         <height>261</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="clearPB">
+       <property name="geometry">
+        <rect>
+         <x>190</x>
+         <y>160</y>
+         <width>88</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Clear</string>
+       </property>
+      </widget>
      </widget>
     </item>
     <item>
@@ -66,7 +89,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>23</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -80,7 +103,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen">
    <property name="text">
-    <string>Open</string>
+    <string>&amp;Open</string>
    </property>
   </action>
  </widget>
